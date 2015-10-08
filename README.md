@@ -13,12 +13,12 @@ A CLI app made for generating detailed sitemaps for websites which don't have on
 - Simple and powerful configuration
 - `robots.txt` support
 
-## Building:
+## Building CLI:
 1. Download required libraries
  - `go get https://github.com/eapache/channels`
  - `go get github.com/temoto/robotstxt-go`
 2. Build it
- - `cd cli`
+ - `cd sitemap-generator`
  - `go build`
 
 ## Usage:
