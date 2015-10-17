@@ -13,7 +13,7 @@ import (
 
 //Validator manages address flow by pushing them to certain creation proccesses and makes sure no links are parsed twice.
 type Validator struct {
-	sites       map[string]bool
+	sites       map[string]struct{}
 	workerQueue *channels.InfiniteChannel
 	Input       chan *url.URL
 	config      config.Config
@@ -30,7 +30,7 @@ func NewValidator(config config.Config, workerQueue *channels.InfiniteChannel, w
 	if err != nil {
 		return nil
 	}
-	return &Validator{make(map[string]bool), workerQueue, make(chan *url.URL, 256), config, parsedURL, waitGroup, robots, sitemapGenerator}
+	return &Validator{make(map[string]struct{}), workerQueue, make(chan *url.URL, 256), config, parsedURL, waitGroup, robots, sitemapGenerator}
 }
 
 func (v *Validator) start() {
@@ -55,7 +55,7 @@ func (v *Validator) start() {
 				continue
 			}
 			//Mark as already processed
-			v.sites[URLProtStripped] = true
+			v.sites[URLProtStripped] = struct{}{}
 
 			//Check for robots
 			if v.config.Parsing.RespectRobots && v.robots != nil {
