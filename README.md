@@ -1,4 +1,6 @@
 # Sitemap Generator
+[![Build Status](https://travis-ci.org/maciekmm/sitemap-generator.svg?branch=master)](https://travis-ci.org/maciekmm/sitemap-generator)
+
 A CLI app made for generating detailed sitemaps for websites which don't have one.
 
 **This piece of software is in early development stage and has not been fully tested, use at your own risk.**
