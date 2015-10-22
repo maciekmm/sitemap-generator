@@ -12,7 +12,11 @@ type Client struct {
 //NewClient returns a new http.Client instance
 func NewClient(client *http.Client, limiter *RateLimiter, userAgent string) *Client {
 	limiter.Start()
-	return &Client{client, *limiter, userAgent}
+	return &Client{
+		client:    client,
+		limiter:   *limiter,
+		userAgent: userAgent,
+	}
 }
 
 //Do performs a given http.Request with ratelimiting in mind

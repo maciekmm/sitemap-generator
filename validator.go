@@ -24,13 +24,23 @@ type Validator struct {
 }
 
 //NewValidator creates a new validator instance
-func NewValidator(config config.Config, workerQueue *channels.InfiniteChannel, waitGroup *sync.WaitGroup, robots *robotstxt.RobotsData, sitemapGenerator chan string) *Validator {
+func NewValidator(config config.Config, workerQueue *channels.InfiniteChannel, waitGroup *sync.WaitGroup, robots *robotstxt.RobotsData, generator chan string) *Validator {
 	parsedURL, err := url.Parse(config.URL)
 	parsedURL.Host = StripWWW(parsedURL.Host)
 	if err != nil {
 		return nil
 	}
-	return &Validator{make(map[string]struct{}), workerQueue, make(chan *url.URL, 256), config, parsedURL, waitGroup, robots, sitemapGenerator}
+
+	return &Validator{
+		sites:       make(map[string]struct{}),
+		workerQueue: workerQueue,
+		Input:       make(chan *url.URL, 256),
+		config:      config,
+		url:         parsedURL,
+		waitGroup:   waitGroup,
+		robots:      robots,
+		generator:   generator,
+	}
 }
 
 func (v *Validator) start() {

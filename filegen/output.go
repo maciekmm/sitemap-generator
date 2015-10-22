@@ -24,8 +24,9 @@ var startElement = xml.StartElement{
 
 type output struct {
 	config.Filter
-	encoder      *xml.Encoder
-	urls, fileNo int
+	encoder *xml.Encoder
+	urls    int
+	fileNo  int
 }
 
 func (out *output) put(entry string) error {
