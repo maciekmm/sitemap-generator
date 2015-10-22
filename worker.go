@@ -22,7 +22,13 @@ type Worker struct {
 }
 
 func NewWorker(workQueue *channels.InfiniteChannel, validator chan<- *url.URL, waitGroup *sync.WaitGroup, generator chan<- string, httpClients chan *limit.Client) *Worker {
-	return &Worker{workQueue, validator, waitGroup, generator, httpClients}
+	return &Worker{
+		workQueue:   workQueue,
+		validator:   validator,
+		waitGroup:   waitGroup,
+		generator:   generator,
+		httpClients: httpClients,
+	}
 }
 
 func (w *Worker) Start() {
@@ -32,6 +38,7 @@ func (w *Worker) Start() {
 			if !ok {
 				return
 			}
+
 			stringURL := job.(*url.URL).String()
 			req, err := http.NewRequest("GET", stringURL, nil)
 			if err != nil {
@@ -41,7 +48,7 @@ func (w *Worker) Start() {
 			}
 			client := <-w.httpClients
 			w.httpClients <- client
-			//log.Println("In pool:", strconv.Itoa(w.workQueue.Len()), " - ", stringURL)
+			//DEBUG: log.Println("In pool:", strconv.Itoa(w.workQueue.Len()), " - ", stringURL)
 			resp, err := client.Do(req)
 			if err != nil {
 				log.Println("Worker: Could not connect to: ", stringURL, " error: ", err.Error())
@@ -56,7 +63,7 @@ func (w *Worker) Start() {
 			if resp.StatusCode != http.StatusOK {
 				resp.Body.Close()
 				log.Println("Worker: Invalid status code for: ", stringURL, " code: ", resp.StatusCode)
-				//return to pool on certain errors
+				//TODO: return to pool on certain errors
 				w.waitGroup.Done()
 				continue
 			}
@@ -67,10 +74,11 @@ func (w *Worker) Start() {
 				w.waitGroup.Done()
 				continue
 			}
+
 			//Push to file generation
 			w.waitGroup.Add(1)
 			w.generator <- stringURL
-			//log.Println("Parsing ", stringURL)
+			//DEBUG: log.Println("Parsing ", stringURL)
 			doc := html.NewTokenizer(resp.Body)
 			for tokenType := doc.Next(); tokenType != html.ErrorToken; {
 				token := doc.Token()

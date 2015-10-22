@@ -24,7 +24,11 @@ type Generator struct {
 //NewSitemapGenerator constructs a new sitemap generator instance,
 //Call Start() in order to start the proccesszz
 func NewGenerator(config *config.Config) *Generator {
-	return &Generator{channels.NewInfiniteChannel(), new(sync.WaitGroup), config}
+	return &Generator{
+		WorkerQueue: channels.NewInfiniteChannel(),
+		waitGroup:   new(sync.WaitGroup),
+		config:      config,
+	}
 }
 
 //Start gives the whole machine a spin
@@ -45,15 +49,15 @@ func (sg *Generator) Start() error {
 	}
 
 	//Create sitemapgenerator
-	sitemapgen, err := filegen.NewGenerator(*sg.config, sg.waitGroup)
+	sitemapgen, err := filegen.New(*sg.config, sg.waitGroup)
 	if err != nil {
-		log.Println("Dispatcher: " + err.Error())
+		log.Println("Generator: " + err.Error())
 		return err
 	}
 	go sitemapgen.Start()
 
 	//Create validator
-	log.Println("Dispatcher: Creating validator.")
+	log.Println("Generator: Creating validator.")
 	validator := NewValidator(*sg.config, sg.WorkerQueue, sg.waitGroup, robs, sitemapgen.Input)
 	go validator.start()
 	sg.waitGroup.Add(1)
@@ -77,7 +81,7 @@ func (sg *Generator) Start() error {
 	for _, proxy := range sg.config.Parsing.Proxies {
 		proxyURL, err := url.Parse(proxy.Address)
 		if err != nil {
-			log.Println("Dispatcher: Invalid proxy url: ", proxy.Address)
+			log.Println("Generator: Invalid proxy url: ", proxy.Address)
 		}
 		proxyURL.User = url.UserPassword(proxy.Username, proxy.Password)
 		client := &http.Client{
@@ -87,7 +91,7 @@ func (sg *Generator) Start() error {
 		httpCls = append(httpCls, limit.NewClient(client, limit.NewRateLimiter(sg.config.Parsing.RequestsPerSecond, sg.config.Parsing.Burst), sg.config.Parsing.UserAgent))
 	}
 	//Construct the channel
-	log.Println("Dispatcher: Finished creating proxies, total: ", len(httpCls))
+	log.Println("Generator: Finished creating proxies, total: ", len(httpCls))
 	httpClients := make(chan *limit.Client, len(httpCls))
 	for _, cli := range httpCls {
 		httpClients <- cli
@@ -95,14 +99,14 @@ func (sg *Generator) Start() error {
 
 	//Create workers
 	for i := 0; i < sg.config.Parsing.Workers; i++ {
-		log.Println("Dispatcher: Creating worker no. ", i)
+		log.Println("Generator: Creating worker no. ", i)
 		worker := NewWorker(sg.WorkerQueue, validator.Input, sg.waitGroup, sitemapgen.Input, httpClients)
 		go worker.Start()
 	}
 
 	//Wait for work to finish
 	sg.waitGroup.Wait()
-	log.Println("Dispatcher: All work's done, closing channels.")
+	log.Println("Generator: All work's done, closing channels.")
 	sg.WorkerQueue.Close()
 	close(httpClients)
 	close(validator.Input)
@@ -117,15 +121,15 @@ func (sg *Generator) Start() error {
 func GetRobots(url *url.URL) (*robotstxt.RobotsData, error) {
 	resp, err := http.DefaultClient.Get("http://" + url.Host + "/robots.txt")
 	if err != nil {
-		return nil, fmt.Errorf("Dispatcher: robots.txt lookup yield an error %s", err.Error())
+		return nil, fmt.Errorf("Generator: robots.txt lookup yield an error %s", err.Error())
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Dispatcher: robots.txt returned an invalid http code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("Generator: robots.txt returned an invalid http code: %d", resp.StatusCode)
 	}
 	rob, err := robotstxt.FromResponse(resp)
 	if err != nil {
-		return nil, fmt.Errorf("Dispatcher: Parsing robots.txt yield an error %s", err)
+		return nil, fmt.Errorf("Generator: Parsing robots.txt yield an error %s", err)
 	}
 	return rob, nil
 }
