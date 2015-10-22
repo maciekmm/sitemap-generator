@@ -21,6 +21,6 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	gen := sitemapgen.NewSitemapGenerator(cfg)
+	gen := sitemapgen.NewGenerator(cfg)
 	gen.Start()
 }

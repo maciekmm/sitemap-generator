@@ -15,7 +15,7 @@ import (
 	"github.com/temoto/robotstxt-go"
 )
 
-type SitemapGenerator struct {
+type Generator struct {
 	WorkerQueue *channels.InfiniteChannel
 	waitGroup   *sync.WaitGroup
 	config      *config.Config
@@ -23,13 +23,13 @@ type SitemapGenerator struct {
 
 //NewSitemapGenerator constructs a new sitemap generator instance,
 //Call Start() in order to start the proccesszz
-func NewSitemapGenerator(config *config.Config) *SitemapGenerator {
-	return &SitemapGenerator{channels.NewInfiniteChannel(), new(sync.WaitGroup), config}
+func NewGenerator(config *config.Config) *Generator {
+	return &Generator{channels.NewInfiniteChannel(), new(sync.WaitGroup), config}
 }
 
 //Start gives the whole machine a spin
 //TODO: Divide and conquer :>
-func (sg *SitemapGenerator) Start() error {
+func (sg *Generator) Start() error {
 	parsed, err := url.Parse(sg.config.URL)
 	if err != nil {
 		return err
