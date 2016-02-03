@@ -21,7 +21,7 @@ type ParsingConfig struct {
 	//ResultExclusions regex array defines what sites are being excluded from the sitemap
 	Params            []*ParamsFilter `json:"params,omitempty"`
 	CutProtocol       bool            `json:"cutProtocol,omitempty"`
-	Proxies           []*Proxy        `json:"proxies,omitempty"`
+	Proxies           []Proxy         `json:"proxies,omitempty"`
 	UserAgent         string          `json:"userAgent,omitempty"`
 	RequestsPerSecond int64           `json:"requestsPerSec,omitempty"`
 	Burst             int             `json:"burst,omitempty"`
@@ -65,5 +65,24 @@ func FromFile(file string) (*Config, error) {
 	}
 	cfg := new(Config)
 	err = json.Unmarshal(fileC, cfg)
+	return cfg, err
+}
+
+//FromFiles parses regular config file for website setting and proxy config file for proxies
+func FromFiles(config string, proxies string) (*Config, error) {
+	cfg, err := FromFile(config)
+	if err != nil {
+		return nil, err
+	}
+
+	if proxies == "" {
+		return cfg, err
+	}
+
+	proxyConfig, err := ioutil.ReadFile(proxies)
+	if err != nil {
+		return cfg, err
+	}
+	err = json.Unmarshal(proxyConfig, &cfg.Parsing.Proxies)
 	return cfg, err
 }
