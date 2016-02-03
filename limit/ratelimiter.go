@@ -12,6 +12,15 @@ type RateLimiter struct {
 	started uint32
 }
 
+//NewRateLimitedWebClient constructs RateLimitedWebClient with given rate and burst limit
+func NewRateLimiter(rps int64, burst int) *RateLimiter {
+	return &RateLimiter{
+		ticker:  time.NewTicker(time.Second / time.Duration(rps)),
+		burst:   make(chan time.Time, burst),
+		started: 0,
+	}
+}
+
 //Stop stops a RateLimitedWebClient
 func (rl *RateLimiter) Stop() {
 	rl.ticker.Stop()
@@ -23,7 +32,9 @@ func (rl *RateLimiter) Start() error {
 	if atomic.LoadUint32(&rl.started) > 0 {
 		return errors.New("Client's ticker already started")
 	}
+
 	atomic.StoreUint32(&rl.started, 1)
+
 	go func() {
 		for t := range rl.ticker.C {
 			select {
@@ -37,9 +48,4 @@ func (rl *RateLimiter) Start() error {
 
 func (rl *RateLimiter) Wait() {
 	<-rl.burst
-}
-
-//NewRateLimitedWebClient constructs RateLimitedWebClient with given rate and burst limit
-func NewRateLimiter(rps int64, burst int) *RateLimiter {
-	return &RateLimiter{time.NewTicker(time.Second / time.Duration(rps)), make(chan time.Time, burst), 0}
 }
